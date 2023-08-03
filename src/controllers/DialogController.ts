@@ -4,11 +4,13 @@ import socket from 'socket.io';
 import { DialogModel, MessageModel } from "../models";
 
 class DialogController {
+
   io: socket.Server
   constructor(io: socket.Server){
     this.io = io;
   }
-  index = (req: any, res: express.Response) => {
+
+  index = (req: express.Request, res: express.Response):void => {
     const userId = req.user._id;
 
     DialogModel.find()
@@ -18,6 +20,18 @@ class DialogController {
         path: "lastMessage",
         populate: {
           path: "user"
+        }
+      })
+      .populate({
+        path: "partner",
+        populate: {
+          path: "avatar"
+        }
+      })
+      .populate({
+        path: "author",
+        populate: {
+          path: "avatar"
         }
       })
       .exec(function(err, dialogs) {
@@ -31,57 +45,86 @@ class DialogController {
       });
   };
 
-
-
-  
-  create = (req: any, res: express.Response) => {
+  create = (req: express.Request, res: express.Response): void => {
     const postData = {
       author: req.user._id,
-      partner: req.body.partner
+      partner: req.body.partner,
     };
-    const dialog = new DialogModel(postData);
 
-    dialog
-      .save()
-      .then((dialogObj: any) => {
-        const message = new MessageModel({
-          text: req.body.text,
-          user: req.user._id,
-          dialog: dialogObj._id
-        });
-
-        message
-          .save()
-          .then(() => {
-            dialogObj.lastMessage = message._id;
-            dialogObj.save().then(()=>{
-              res.json(dialogObj);
-              this.io.emit("SERVER:DIALOG_CREATED",{
-                ...postData,
-                dialog:dialogObj
-            }); 
-            })
-          })
-          .catch(err => {
-            res.json({
-              status:'error',
-              message:err
-            });
+    DialogModel.findOne(
+      {
+        author: req.user._id,
+        partner: req.body.partner,
+      },
+      (err:any, dialog:any) => {
+        if (err) {
+          return res.status(500).json({
+            status: 'error',
+            message: err,
           });
-      })
-      .catch(reason => {
-        res.json(reason);
-      });
+        }
+        if (dialog) {
+          return res.status(403).json({
+            status: 'error',
+            message: 'Такой диалог уже есть',
+          });
+        } else {
+          const dialog = new DialogModel(postData);
+
+          dialog
+            .save()
+            .then((dialogObj) => {
+              const message = new MessageModel({
+                text: req.body.text,
+                user: req.user._id,
+                dialog: dialogObj._id,
+              });
+
+              message
+                .save()
+                .then(() => {
+                  dialogObj.lastMessage = message._id;
+                  dialogObj.save().then(() => {
+                    res.json(dialogObj);
+                    this.io.emit('SERVER:DIALOG_CREATED', {
+                      ...postData,
+                      dialog: dialogObj,
+                    });
+                  });
+                })
+                .catch((reason) => {
+                  res.json(reason);
+                });
+            })
+            .catch((err) => {
+              res.json({
+                status: 'error',
+                message: err,
+              });
+            });
+        }
+      },
+    );
   };
-    delete = (req: express.Request, res: express.Response) =>{
+    delete = (req: express.Request, res: express.Response):void =>{
       const id: string = req.params.id;
-      DialogModel.findOneAndRemove({_id:id}).then((dialog:any)=> {
+      DialogModel.findOneAndRemove({_id:id})
+      .then((dialog:any)=> {
         if(dialog){
-          res.json({
-            message:`Dialog delete`
+          MessageModel.deleteMany({dialog:id}).then(()=>{
+                res.json({
+                  status:"success",
+                  message:`Dialog and messages delete`
+                })
+                this.io.emit('SERVER:DIALOG_DELETED', {});
+          }).catch(()=>{
+              res.json({
+                message:`Message not found`
+              })
           })
         }
-      }).catch(()=>{
+      })
+      .catch(()=>{
         res.json({
           message:`Dialog not found`
         })

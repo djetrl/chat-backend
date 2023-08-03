@@ -2,12 +2,13 @@ import mongoose,{ Schema,Document } from "mongoose";
 import differenceInMinutes from 'date-fns/differenceInMinutes'
 import  validator from 'validator';
 import { generatePasswordHash } from "../utils";
+import { IUploadFile } from "./UploadFile";
 export interface IUser extends Document{
   email:string;
   fullname:string;
   password:string;
   confirmed:boolean;
-  avatar:string;
+  avatar:IUploadFile | string;
   confirm_hash:string;
   last_seen:Date;
   data?:IUser
@@ -18,7 +19,8 @@ const UserSchema = new Schema(
       type: String,
       require: "Email address is required",
       validate: [validator.isEmail, "Invalid email"],
-      index: {unique: true}
+      index: {unique: true},
+      
     },
     fullname: { 
       type: String,
@@ -32,7 +34,7 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    avatar: String,
+    avatar: [{type:Schema.Types.ObjectId, ref:'UploadFile'}],
     confirm_hash: String,
     last_seen: {
       type: Date,
@@ -61,4 +63,5 @@ UserSchema.pre<IUser>("save", async function (next) {
   user.confirm_hash = await generatePasswordHash(new Date().toString());
 });
 const UserModel = mongoose.model<IUser>("User", UserSchema);
+
 export default UserModel;

@@ -11,8 +11,7 @@ export default (http:http.Server)=>{
     socket.on("DIALOG:JOIN", (dialogId:string)=>{
       socket.dialogId = dialogId;
       socket.join(dialogId);
-      console.log('join', dialogId);
-      })
+  });
       socket.on("DIALOGS:TYPING", (obj:any)=>{
         socket.emit("DIALOGS:TYPING", obj)
       })

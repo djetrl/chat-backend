@@ -4,4 +4,9 @@ mongoose.connect('mongodb://0.0.0.0:27017/chat', {
   useCreateIndex: true,
   useFindAndModify: false,
   useUnifiedTopology: true
+},
+ (err:any)=>{
+  if (err) {
+    throw Error(err);
+  }
 });
