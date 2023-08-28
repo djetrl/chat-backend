@@ -9,7 +9,9 @@ export default (
   ) => {
   if (req.path === "/user/signin" || 
       req.path === "/user/signup"|| 
-      req.path === "/user/verify"
+      req.path === "/user/verify"||
+      req.path === "/user/recover"||
+      /public/.test(req.path)
   ) {
     return next();
   }

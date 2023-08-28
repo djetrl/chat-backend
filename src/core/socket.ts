@@ -9,12 +9,16 @@ export default (http:http.Server)=>{
   })
   io.on('connection', (socket:any) => {
     socket.on("DIALOG:JOIN", (dialogId:string)=>{
+      console.log(dialogId);
+ 
       socket.dialogId = dialogId;
       socket.join(dialogId);
   });
       socket.on("DIALOGS:TYPING", (obj:any)=>{
-        socket.emit("DIALOGS:TYPING", obj)
+        console.log('DIALOGS:TYPING',obj.dialogId);
+        socket.to(obj.dialogId).emit("DIALOGS:TYPING", obj.user)
       })
   });
   return io
 }
+

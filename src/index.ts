@@ -16,8 +16,8 @@ const io = createSoket(http)
 
 
 createRoutes(app,io);
-
-http.listen(process.env.PORT, function() {
+const PORT:number = process.env.PORT ? Number(process.env.PORT):3003;
+http.listen(PORT, function() {
   console.log(`Server: http://localhost:${process.env.PORT}`);
 });
 // TODO:

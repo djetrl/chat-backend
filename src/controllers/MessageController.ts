@@ -1,7 +1,8 @@
 import express from "express";
 import socket from "socket.io";
-import { MessageModel, DialogModel } from "../models";
+import { MessageModel, DialogModel,UploadFileModel } from "../models";
 import { IMessage } from "../models/Message";
+import { unlinkSync } from "fs";
 class MessageController {
   io: socket.Server;
 
@@ -45,13 +46,26 @@ class MessageController {
      .sort({ _id: -1})
       .limit(15)
       .skip(Number(skip))
-      .populate(["dialog", "user","attachments",])
+      .populate(["dialog", "user","attachments","embeddedMessage"])
       .populate({
         path: "user",
         populate: {
           path: "avatar"
         }
       })
+      .populate({
+        path: "embeddedMessage",
+        populate: {
+          path: "user"
+        }
+      })
+      .populate({
+        path: "embeddedMessage",
+        populate: {
+          path: "attachments"
+        }
+      })
+      .lean()
       .exec(function(err, messages) {
         if (err) {     
           return res.status(404).json({
@@ -82,6 +96,7 @@ class MessageController {
       text: req.body.text,
       dialog: req.body.dialog_id,
       attachments:req.body.attachments,
+      embeddedMessage:req.body.embeddedMessage,
       user: userId
     };
     
@@ -91,7 +106,21 @@ class MessageController {
     .save()
     .then((obj: IMessage) => {
       obj.populate(
-        "dialog user attachments",
+        "dialog user attachments embeddedMessage"
+      )
+      .populate({
+        path: "embeddedMessage",
+        populate: {
+          path: "user"
+        }
+      })
+      .populate({
+        path: "embeddedMessage",
+        populate: {
+          path: "attachments"
+        }
+      })
+      .execPopulate(
         (err: any, message: IMessage) => {
           if (err) {
             return res.status(500).json({
@@ -113,12 +142,12 @@ class MessageController {
               }
             }
           );
-
+          
           res.json(message);
 
           this.io.emit("SERVER:NEW_MESSAGE", message);
         }
-      );
+      )
     })
     .catch((reason) => {
       res.json(reason);
@@ -129,14 +158,29 @@ class MessageController {
     const id:string= req.query.id;
     const userId: string = req.user._id;
 
-    MessageModel.findById(id, (err:any, message: any) => {
+    MessageModel.findById(id)
+    .populate(["attachments"])
+    .exec((err:any, message: any) => {
       if (err || !message) {
         return res.status(404).json({
           status: "error",
           message: "Message not found",
         });
       }
-
+      if(message.attachments){
+        message.attachments.forEach((attachment:any) => {        
+          const http = "http://localhost:3003/";
+          unlinkSync(attachment.url.slice(http.length))
+          UploadFileModel.deleteOne({ _id: attachment._id }, function (err: any) {
+            if (err) {
+              return res.status(500).json({
+                status: "error",
+                message: err,
+              });
+            }
+          });
+        });
+      }
       if (message.user.toString() === userId) {
         const dialogId = message.dialog;
         message.remove();
@@ -198,6 +242,7 @@ class MessageController {
             path: "avatar"
           }
         })
+        .lean()
         .exec(function(err, messages) {
           if (err) {     
             return res.status(404).json({
