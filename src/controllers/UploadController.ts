@@ -8,7 +8,10 @@ class UploadController {
   indexByDialogId = (req: express.Request, res: express.Response): void => {
     const dialogId: any = req.query.dialog;
     MessageModel.find({ dialog: dialogId }, 'attachments')
-      .populate(["attachments"])
+      .populate({
+        path: "attachments",
+        select:(['-updatedAt', '-__v', '-user'])
+      })
       .lean()
       .exec(function (err, attachments) {
         if (err) {

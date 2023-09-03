@@ -19,22 +19,27 @@ class DialogController {
       .populate({
         path: "lastMessage",
         populate: {
-          path: "user"
+          path: "user",
+          select:('_id')
         },
+        select:(['-createdAt','-dialog', '-embeddedMessage'])
+
       })
       .populate({
         path: "partner",
         populate: {
-          path: "avatar"
+          path: "avatar",
+          select:(['_id', 'filename', 'url'])
         },
-        select:'-password'
+        select:(['-password', '-confirm_hash', '-updatedAt','-createdAt','-confirmed'])
       })
       .populate({
         path: "author",
         populate: {
-          path: "avatar"
+          path: "avatar",
+          select:(['_id', 'filename', 'url'])
         },
-        select:'-password'
+        select:(['-password', '-confirm_hash', '-updatedAt','-createdAt','-confirmed'])
       })
       
       .lean()

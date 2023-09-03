@@ -44,27 +44,37 @@ class MessageController {
     this.updateReadStatus(res, userId, dialogId);
     MessageModel.find({ dialog: dialogId })
      .sort({ _id: -1})
-      .limit(15)
+      .limit(10)
       .skip(Number(skip))
-      .populate(["dialog", "user","attachments","embeddedMessage"])
+      .populate(["user","attachments",'embeddedMessage'])
+      .populate({
+        path:'attachments',
+        select:(['-updatedAt', '-user'])
+      })
       .populate({
         path: "user",
         populate: {
-          path: "avatar"
+          path: "avatar",
+          select:(['_id', 'filename', 'url'])
+        },
+        select:(['_id','fullname','avatar',])
+      })
+      .populate({
+        path: "embeddedMessage",
+        populate: {
+          path: "user",
+         select:(['_id','fullname'])
         }
       })
       .populate({
         path: "embeddedMessage",
         populate: {
-          path: "user"
-        }
+          path: "attachments",
+          select:(['-updatedAt', '-user'])
+        },
+        select:(['_id','attachments','text','user'])
       })
-      .populate({
-        path: "embeddedMessage",
-        populate: {
-          path: "attachments"
-        }
-      })
+      .select('-updatedAt')
       .lean()
       .exec(function(err, messages) {
         if (err) {     
@@ -235,13 +245,35 @@ class MessageController {
     const text:string = req.query.text;
     MessageModel.find()
         .and([{dialog:dialogId},{text:new RegExp(text,"i" )}])
-        .populate(["dialog", "user","attachments",])
+        .populate(["user","attachments",'embeddedMessage'])
+        .populate({
+          path:'attachments',
+          select:(['-updatedAt', '-user'])
+        })
         .populate({
           path: "user",
           populate: {
-            path: "avatar"
+            path: "avatar",
+            select:(['_id', 'filename', 'url'])
+          },
+          select:(['_id','fullname','avatar',])
+        })
+        .populate({
+          path: "embeddedMessage",
+          populate: {
+            path: "user",
+           select:(['_id','fullname'])
           }
         })
+        .populate({
+          path: "embeddedMessage",
+          populate: {
+            path: "attachments",
+            select:(['-updatedAt', '-user'])
+          },
+          select:(['_id','attachments','text','user'])
+        })
+        .select('-updatedAt')
         .lean()
         .exec(function(err, messages) {
           if (err) {     
