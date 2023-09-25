@@ -31,9 +31,12 @@ const createRoutes =(app:express.Express, io: socket.Server)=>{
   app.patch('/user/passwordChange', UserController.updatePassword)
   
   app.get('/dialogs', DialogController.index);
+  app.patch('/dialogs', DialogController.update)
   app.delete('/dialogs/:id', DialogController.delete); 
   app.post('/dialogs', DialogController.create);
-
+  app.post('/dialogs/group', DialogController.createGroup);
+  app.post('/dialogs/addUserGroup', DialogController.addPartnerFromDialog);
+  app.post('/dialogs/deletePartnerForGroup', DialogController.deletePartner);
   app.get('/messages', MessageController.index);
   app.get('/messages/find', MessageController.findMessage);
   app.delete('/messages',  MessageController.delete);

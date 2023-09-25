@@ -149,7 +149,7 @@ class UserController {
 
   create = (req: express.Request, res: express.Response): void => {
     const postData: { email: string, fullname: string, password: string } = {
-      email: req.body.email,
+      email: req.body.email.toLowerCase(),
       fullname: req.body.fullname,
       password: req.body.password
     }
@@ -249,7 +249,7 @@ class UserController {
   };
   login = (req: express.Request, res: express.Response): void => {
     const postData: { email: string; password: string } = {
-      email: req.body.email,
+      email: req.body.email.toLowerCase(),
       password: req.body.password,
     };
 
@@ -289,7 +289,7 @@ class UserController {
     }
   };
   recoverPassword = (req: express.Request | any, res: express.Response): void => {
-    const query: string = req.query.query;
+    const query: string = req.query.query.toLowerCase();
     const newPassword: any = generateRandomPassword(10);
     UserModel.findOne({ email: query }).exec(function (err, user) {
 
