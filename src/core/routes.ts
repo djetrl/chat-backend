@@ -16,7 +16,6 @@ const createRoutes =(app:express.Express, io: socket.Server)=>{
   app.use(checkAuth);
   app.use(updateLastSeen);
   app.use('/public/',express.static(path.join(__dirname, '../../public')));
-
   app.get('/user/me', UserController.getMe)
   app.delete('/user/me', UserController.delete)
   app.get('/user/verify',  UserController.verify);
@@ -44,6 +43,6 @@ const createRoutes =(app:express.Express, io: socket.Server)=>{
 
   app.get('/files/media', UploadFileController.indexByDialogId);
   app.delete('/files/media', UploadFileController.delete);
-  app.post('/files/media',uploadFile.single('file') , UploadFileController.create);  
+  app.post('/files/media',uploadFile.single('file') , UploadFileController.create);   
 }
 export default createRoutes;

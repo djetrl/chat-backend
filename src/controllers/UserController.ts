@@ -252,7 +252,8 @@ class UserController {
       email: req.body.email.toLowerCase(),
       password: req.body.password,
     };
-
+  
+    
     const errors: Result<ValidationError> = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -264,7 +265,6 @@ class UserController {
             message: "User not found",
           });
         }
-        console.log(user);
         if(user.confirmed){
           if (bcrypt.compareSync(postData.password, user.password)) {
             const token = createJWToken(user);
