@@ -3,16 +3,27 @@ import bcrypt from "bcrypt";
 import socket from 'socket.io';
 import { validationResult, Result, ValidationError } from "express-validator";
 import mailer from '../core/mailer'
-import { UserModel, DialogModel, MessageModel, UploadFileModel } from "../models";
+import { UserModel, DialogModel, MessageModel, UploadFileModel, TokenModel } from "../models";
 import { IUser } from "../models/User";
 import { createJWToken, generateRandomPassword, generatePasswordHash } from '../utils';
 import { SentMessageInfo } from "nodemailer/lib/sendmail-transport";
 import { unlinkSync } from "fs";
 
+import jwt from 'jsonwebtoken';
 
-const http = "http://localhost:3003/";
+
+const https = "https://localhost:3003/";
+const updateTokens = (user: IUser) => {
+  const accessToken = createJWToken.generateAccessToken(user);
+  const refreshToken = createJWToken.generateRefreshToken();
+  return createJWToken.replaceDbRefreshToken(refreshToken.id, user._id)
+    .then(() => ({
+      accessToken,
+      refreshToken: refreshToken.token
+    }));
+}
 class UserController {
-  
+
   io: socket.Server
   constructor(io: socket.Server) {
     this.io = io;
@@ -83,16 +94,16 @@ class UserController {
                 message: err,
               });
             }
-                unlinkSync(user.avatar[0].url.slice(http.length))
-              
-              UploadFileModel.deleteOne({ _id: user.avatar[0]._id }, function (err: any) {
-                if (err) {
-                  return res.status(500).json({
-                    status: "error",
-                    message: err,
-                  });
-                }
-              });
+            unlinkSync(user.avatar[0].url.slice(https.length))
+
+            UploadFileModel.deleteOne({ _id: user.avatar[0]._id }, function (err: any) {
+              if (err) {
+                return res.status(500).json({
+                  status: "error",
+                  message: err,
+                });
+              }
+            });
           }
         )
 
@@ -105,28 +116,28 @@ class UserController {
             response.forEach(responseItem => {
 
               MessageModel.find({ dialog: responseItem._id })
-              .populate(['attachments'])
-              .lean()
-              .exec(function (err, responseMessage) {
-                if(err){
+                .populate(['attachments'])
+                .lean()
+                .exec(function (err, responseMessage) {
+                  if (err) {
+                    res.status(404).json({
+                      status: "error",
+                      message: err
+                    });
+                  }
+                  responseMessage.forEach((message: any) => {
+                    message.attachments.forEach((attachment: any) => {
+                      unlinkSync(attachment.url.slice(https.length))
+                    })
+                  })
+                })
+              MessageModel.deleteMany({ dialog: responseItem._id })
+                .catch((err: any) => {
                   res.status(404).json({
                     status: "error",
                     message: err
                   });
-                }
-                responseMessage.forEach((message:any)=>{
-                  message.attachments.forEach((attachment:any)=>{
-                    unlinkSync(attachment.url.slice(http.length))
-                  })
                 })
-              })
-              MessageModel.deleteMany({ dialog: responseItem._id })
-              .catch((err:any)=>{
-                res.status(404).json({
-                  status: "error",
-                  message:err
-                });
-              })
             })
           })
           DialogModel.deleteMany({ $or: [{ partner: id }, { author: id }] })
@@ -168,7 +179,7 @@ class UserController {
               from: "chatdjet@inbox.ru",
               to: postData.email,
               subject: "Подтверждение почты",
-              html: `Для того, чтобы подтвердить почту, перейдите <a href="http://localhost:3000/signup/verify?hash=${obj.confirm_hash}">по этой ссылке</a>`,
+              html: `Для того, чтобы подтвердить почту, перейдите <a href="https://localhost:3000/signup/verify?hash=${obj.confirm_hash}">по этой ссылке</a>`,
             },
             function (err: Error | null, info: SentMessageInfo) {
               if (err) {
@@ -252,8 +263,8 @@ class UserController {
       email: req.body.email.toLowerCase(),
       password: req.body.password,
     };
-  
-    
+
+
     const errors: Result<ValidationError> = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -265,20 +276,30 @@ class UserController {
             message: "User not found",
           });
         }
-        if(user.confirmed){
+        if (user.confirmed) {
           if (bcrypt.compareSync(postData.password, user.password)) {
-            const token = createJWToken(user);
-            res.json({
-              status: "success",
-              token,
-            });
+
+            updateTokens(user).then(tokens => {
+              var dateref = new Date(); 
+              dateref.setTime(dateref.getTime() + (30 * 24 * 60 * 60 * 1000));
+              var dateacs= new Date(); 
+              dateacs.setTime(dateacs.getTime() + (1 * 60 * 60 * 1000));
+
+              res.cookie('refTKn', tokens.refreshToken, { sameSite: true, expires: dateref, })
+              res.cookie('acsTKn', tokens.accessToken.token, { sameSite: true, expires: dateacs, })
+              res.json({
+                status: "success",
+                token: tokens,
+              });
+            })
+
           } else {
             res.status(403).json({
               status: "error",
               message: "Incorrect password or email",
             });
           }
-        }else{
+        } else {
           res.status(403).json({
             status: "error",
             message: "account not verified",
@@ -367,7 +388,7 @@ class UserController {
               });
             }
             if (user.avatar[0]._id != postData.avatar) {
-              unlinkSync(user.avatar[0].url.slice(http.length))
+              unlinkSync(user.avatar[0].url.slice(https.length))
               UploadFileModel.deleteOne({ _id: user.avatar[0]._id }, function (err: any) {
                 if (err) {
                   return res.status(500).json({
@@ -430,6 +451,53 @@ class UserController {
             }
             return res.status(200).json(result)
           })
+      })
+  };
+  refreshToken = (req: express.Request, res: express.Response) => {
+    const refreshToken = req.body.refreshToken;
+    let payload: any;
+    try {
+      payload = jwt.verify(refreshToken, process.env.JWT_SECRET || "");
+
+
+      if (payload.type != 'refresh') {
+        res.status(400).json({ message: 'Invalid token!' });
+        return;
+      }
+    }
+    catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        res.status(400).json({ message: 'Token expired!' })
+        return
+      } else if (error instanceof jwt.JsonWebTokenError) {
+        res.status(400).json({ message: 'Invalid token!' });
+        return
+      }
+    }
+    TokenModel.findOne({ tokenId: payload.id })
+    .populate({
+      path: "user",
+      select:(['-updatedAt', '-__v', '-createdAt'])
+    })
+      .exec()
+      .then((token: any) => {
+        if (token === null) {
+          throw new Error('Invalid token!');
+        } 
+         updateTokens(token.user)  
+         .then(tokens =>{ 
+          var dateref = new Date(); 
+          dateref.setTime(dateref.getTime() + (30 * 24 * 60 * 60 * 1000));
+          var dateacs= new Date(); 
+          dateacs.setTime(dateacs.getTime() + (1 * 60 * 60 * 1000));
+          
+          res.cookie('refTKn', tokens.refreshToken, { sameSite: true, expires: dateref, })
+          res.cookie('acsTKn', tokens.accessToken.token, { sameSite: true, expires: dateacs, })
+          res.json(tokens)
+          return
+        })
+        .catch(err => res.status(400).json({ message: err.message }))
+
       })
   }
 }

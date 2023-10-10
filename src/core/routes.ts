@@ -16,16 +16,18 @@ const createRoutes =(app:express.Express, io: socket.Server)=>{
   app.use(checkAuth);
   app.use(updateLastSeen);
   app.use('/public/',express.static(path.join(__dirname, '../../public')));
-  app.get('/user/me', UserController.getMe)
-  app.delete('/user/me', UserController.delete)
+
+
+  app.get('/user/me', UserController.getMe);
+  app.delete('/user/me', UserController.delete);
   app.get('/user/verify',  UserController.verify);
+  app.post('/refresh-tokens', UserController.refreshToken);
   app.post('/user/signup',registerValidation, UserController.create);
   app.post('/user/signin', loginValidation, UserController.login);
   app.get('/user/find',  UserController.findUsers);
   app.patch('/user/recover',  UserController.recoverPassword);
   app.post('/user/passwordVerification', loginValidation, UserController.passwordVerification);
   app.get('/user/:id', UserController.show);
-  app.delete('/user/:id', UserController.delete);
   app.patch('/user/me', UserController.update)
   app.patch('/user/passwordChange', UserController.updatePassword)
   

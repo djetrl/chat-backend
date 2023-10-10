@@ -1,4 +1,3 @@
-
 import jwt, {VerifyErrors} from 'jsonwebtoken';
 import { IUser } from '../models/User';
 export interface DecodedData{ 

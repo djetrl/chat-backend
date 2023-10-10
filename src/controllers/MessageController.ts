@@ -179,8 +179,8 @@ class MessageController {
       }
       if(message.attachments){
         message.attachments.forEach((attachment:any) => {        
-          const http = "http://localhost:3003/";
-          unlinkSync(attachment.url.slice(http.length))
+          const https = "https://localhost:3003/";
+          unlinkSync(attachment.url.slice(https.length));
           UploadFileModel.deleteOne({ _id: attachment._id }, function (err: any) {
             if (err) {
               return res.status(500).json({

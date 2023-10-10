@@ -5,7 +5,6 @@ import { IUploadFile } from "./UploadFile";
 export interface IDialog extends Document{
   partner:IUser | string | Array<string>;
   author:IUser | string;
-  messages:IMessage[];
   lastMessage: IMessage | string;
   name?:string;
   avatar?:IUploadFile | string;

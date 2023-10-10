@@ -36,7 +36,7 @@ class UploadController {
       filename: file.filename,
       size: file.size,
       ext: file.mimetype,
-      url: `http://localhost:${process.env.PORT}/${file.path}`,
+      url: `https://localhost:${process.env.PORT}/${file.path}`,
       user: userId,
     };
     if (fileData.ext.split('/')[0] === 'image' && fileData.ext.split('/')[1] !== 'gif' && fileData.ext.split('/')[1] !== 'xml') {
@@ -50,7 +50,7 @@ class UploadController {
         .then(() => {
           fileData.ext = 'image/webp';
           fileData.filename = path.basename(file.path, path.extname(file.path)) + 'сжато.webp';
-          fileData.url = `http://localhost:${process.env.PORT}/public/media/image/${path.basename(file.path, path.extname(file.path)) + 'сжато.webp'}`
+          fileData.url = `https://localhost:${process.env.PORT}/public/media/image/${path.basename(file.path, path.extname(file.path)) + 'сжато.webp'}`
           fs.unlinkSync(file.path);
           const uploadFile: IUploadFileDocument = new UploadFileModel(fileData);
           uploadFile
@@ -98,8 +98,8 @@ class UploadController {
       }
       else {
         if (file) {
-          const http = "http://localhost:3003/";
-          fs.unlinkSync(file.url.slice(http.length))
+          const https = "https://localhost:3003/";
+          fs.unlinkSync(file.url.slice(https.length))
           UploadFileModel.deleteOne({ _id: file._id }, function (err: any) {
             if (err) {
               return res.status(500).json({
