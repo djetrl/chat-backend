@@ -1,13 +1,7 @@
 import socket from 'socket.io';
-import https from 'https';
-import fs from 'fs';
-import path from 'path';
-const httpsServer = https.createServer({
-  key: fs.readFileSync(path.join(__dirname, '../../cert', 'key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, '../../cert', 'cert.pem')),
-});
-export default (httpsServer:https.Server)=>{
-  const io = new socket.Server(httpsServer,{
+import http from 'http';
+export default (http:http.Server)=>{
+  const io = new socket.Server(http,{
     cors: {
       origin: "*",
       methods: ["GET", "POST"]
@@ -27,4 +21,3 @@ export default (httpsServer:https.Server)=>{
   });
   return io
 }
-
