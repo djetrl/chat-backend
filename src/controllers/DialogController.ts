@@ -6,7 +6,7 @@ import { unlinkSync } from "fs";
 import { IDialog } from "../models/Dialog";
 import {isInArray} from '../utils';
 
-const https = "https://localhost:3003/";
+const http = "http://localhost:3003/";
 class DialogController {
 
 
@@ -274,7 +274,7 @@ class DialogController {
               });
             }
             if (dialog.avatar[0]._id != postData.avatar) {
-              unlinkSync(dialog.avatar[0].url.slice(https.length))
+              unlinkSync(dialog.avatar[0].url.slice(http.length))
               UploadFileModel.deleteOne({ _id: dialog.avatar[0] }, function (err: any) {
                 if (err) {
                   return res.status(500).json({
@@ -327,8 +327,8 @@ class DialogController {
                 messages.forEach((message:any)=>{
                   if (message.attachments) {
                     message.attachments.forEach((attachment: any) => { 
-                      const https = "https://localhost:3003/";
-                      unlinkSync(attachment.url.slice(https.length))
+                      const http = "http://localhost:3003/";
+                      unlinkSync(attachment.url.slice(http.length))
                     })
                   }
                 })

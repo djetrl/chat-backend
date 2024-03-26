@@ -12,7 +12,7 @@ import { unlinkSync } from "fs";
 import jwt from 'jsonwebtoken';
 
 
-const https = "https://localhost:3003/";
+const http = "http://localhost:3003/";
 const updateTokens = (user: IUser) => {
   const accessToken = createJWToken.generateAccessToken(user);
   const refreshToken = createJWToken.generateRefreshToken();
@@ -94,7 +94,7 @@ class UserController {
                 message: err,
               });
             }
-            unlinkSync(user.avatar[0].url.slice(https.length))
+            unlinkSync(user.avatar[0].url.slice(http.length))
 
             UploadFileModel.deleteOne({ _id: user.avatar[0]._id }, function (err: any) {
               if (err) {
@@ -127,7 +127,7 @@ class UserController {
                   }
                   responseMessage.forEach((message: any) => {
                     message.attachments.forEach((attachment: any) => {
-                      unlinkSync(attachment.url.slice(https.length))
+                      unlinkSync(attachment.url.slice(http.length))
                     })
                   })
                 })
@@ -179,7 +179,7 @@ class UserController {
               from: "chatdjet@inbox.ru",
               to: postData.email,
               subject: "Подтверждение почты",
-              html: `Для того, чтобы подтвердить почту, перейдите <a href="https://localhost:3000/signup/verify?hash=${obj.confirm_hash}">по этой ссылке</a>`,
+              html: `Для того, чтобы подтвердить почту, перейдите <a href="http://localhost:3000/signup/verify?hash=${obj.confirm_hash}">по этой ссылке</a>`,
             },
             function (err: Error | null, info: SentMessageInfo) {
               if (err) {
@@ -388,7 +388,7 @@ class UserController {
               });
             }
             if (user.avatar[0]._id != postData.avatar) {
-              unlinkSync(user.avatar[0].url.slice(https.length))
+              unlinkSync(user.avatar[0].url.slice(http.length))
               UploadFileModel.deleteOne({ _id: user.avatar[0]._id }, function (err: any) {
                 if (err) {
                   return res.status(500).json({
