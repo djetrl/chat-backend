@@ -46,5 +46,10 @@ const createRoutes =(app:express.Express, io: socket.Server)=>{
   app.get('/files/media', UploadFileController.indexByDialogId);
   app.delete('/files/media', UploadFileController.delete);
   app.post('/files/media',uploadFile.single('file') , UploadFileController.create);   
+
+  app.get('/test', function(req, res) {
+    res.send('hello world');
+  });
+
 }
 export default createRoutes;
