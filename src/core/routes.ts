@@ -1,5 +1,6 @@
 import bodyParser from 'body-parser';
 import express from 'express';
+import cors from 'cors';
 import socket from 'socket.io';
 import path from 'path';
 import { UserCtrl, DialogCtrl, MessageCtrl, UploadCtrl } from '../controllers';
@@ -12,6 +13,22 @@ const createRoutes =(app:express.Express, io: socket.Server)=>{
   const MessageController = new MessageCtrl(io);
   const UploadFileController = new UploadCtrl();
  
+  var originsWhitelist = [
+    'http://localhost:3000'     //this is my front-end url for development
+  
+  ];
+  var corsOptions = {
+    origin: function(origin:any, callback:any){
+          console.log(origin);
+          var isWhitelisted = originsWhitelist.indexOf(origin) !== -1;
+          console.log(isWhitelisted);
+          callback(null, isWhitelisted);
+    },
+    credentials:true
+  }
+  
+  app.use(cors(corsOptions))
+
   app.use(bodyParser.json());
   app.use(checkAuth);
   app.use(updateLastSeen);
