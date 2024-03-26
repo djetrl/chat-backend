@@ -13,27 +13,21 @@ const createRoutes =(app:express.Express, io: socket.Server)=>{
   const MessageController = new MessageCtrl(io);
   const UploadFileController = new UploadCtrl();
  
-  var originsWhitelist = [
-    'http://localhost:3000'     //this is my front-end url for development
-  
-  ];
   var corsOptions = {
-    origin: function(origin:any, callback:any){
-          console.log(origin);
-          var isWhitelisted = originsWhitelist.indexOf(origin) !== -1;
-          console.log(isWhitelisted);
-          callback(null, isWhitelisted);
-    },
+    origin: "*",
+    
     credentials:true
   }
   
-  app.use(cors(corsOptions))
+  app.use(cors())
 
   app.use(bodyParser.json());
   app.use(checkAuth);
   app.use(updateLastSeen);
   app.use('/public/',express.static(path.join(__dirname, '../../public')));
-
+  app.get('/', function(req, res) {
+    res.send('text');
+  });
 
   app.get('/user/me', UserController.getMe);
   app.delete('/user/me', UserController.delete);
@@ -64,9 +58,6 @@ const createRoutes =(app:express.Express, io: socket.Server)=>{
   app.delete('/files/media', UploadFileController.delete);
   app.post('/files/media',uploadFile.single('file') , UploadFileController.create);   
 
-  app.get('/test', function(req, res) {
-    res.send('hello world');
-  });
 
 }
 export default createRoutes;
